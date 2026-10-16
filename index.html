@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Massa Delivery</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
+body{background:#0a0a0a;color:#fff}
+header{background:#000;border-bottom:2px solid #d4af37;padding:12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:20}
+#bannerTop{display:none;background:#d4af37;color:#000;text-align:center;padding:8px;font-weight:800;font-size:13px}
+#closedOverlay{display:none;position:fixed;inset:0;background:#000e;z-index:60;align-items:center;justify-content:center;text-align:center;padding:20px}
+#closedOverlay.on{display:flex}
+.grid{max-width:1000px;margin:0 auto;padding:10px 12px 130px;display:grid;gap:10px}
+@media(min-width:700px){.grid{grid-template-columns:1fr 1fr}}
+.cat{grid-column:1/-1;font-weight:900;padding:12px 4px 0;font-size:12px;color:#d4af37}
+.item{background:#151515;border:1px solid #2a2a2a;border-radius:14px;padding:10px;display:flex;gap:10px}
+.item img{width:84px;height:84px;border-radius:10px;object-fit:cover;background:#222}
+.preco{color:#d4af37;font-weight:800}
+#cartBar{position:fixed;bottom:14px;left:14px;right:14px;background:#d4af37;color:#000;border-radius:14px;padding:14px;display:flex;justify-content:space-between;z-index:25;font-weight:800}
+#modal,#admLogin,#admPanel{position:fixed;inset:0;background:#000a;z-index:30;display:none;align-items:center;justify-content:center;padding:12px}
+#modal.on,#admLogin.on,#admPanel.on{display:flex}
+.panel,.box{background:#121212;color:#fff;border-radius:16px;width:100%;max-width:800px;max-height:92vh;overflow:auto;padding:14px;border:1px solid #d4af37}
+input,select,textarea{width:100%;padding:11px;border:1px solid #333;background:#1a1a1a;color:#fff;border-radius:10px;margin:5px 0}
+.btnZap{background:#25D366;color:#fff;border:0;padding:14px;border-radius:12px;width:100%;font-weight:800}
+.tab{display:flex;gap:6px;overflow:auto;margin:8px 0}
+.tab button{padding:8px 12px;border-radius:20px;border:1px solid #333;background:#1a1a1a;color:#d4af37;font-weight:700;font-size:12px;white-space:nowrap}
+.tab button.active{background:#d4af37;color:#000}
+.kpi{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin:8px 0}.kpi div{background:#151515;border:1px solid #222;border-radius:10px;padding:10px;text-align:center}
+.kpi b{display:block;font-size:15px;color:#d4af37}
+.chartBox{background:#151515;border:1px solid #222;border-radius:12px;padding:10px;margin:8px 0}
+.small{font-size:11px;color:#aaa}
+</style>
+</head>
+<body>
+<header><div onclick="toqueLogo()" style="cursor:pointer;display:flex;align-items:center;gap:10px"><img src="https://i.imgur.com/8QJ4sQa.png" style="width:36px;height:36px;border-radius:8px;background:#222" onerror="this.style.display='none'"><div><div id="storeName" style="font-weight:900;color:#d4af37">MASSA DELIVERY</div><div class="small" id="lojaStatus" style="background:#00a650;color:#fff;display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px">ABERTA</div></div></div><div style="margin-left:auto" class="small" id="horaFunc">18h-23h</div></header>
+<div id="bannerTop"></div>
+<div id="closedOverlay"><div><h2 style="color:#d4af37;font-size:28px">FECHADO</h2><p id="closedTxt" class="small" style="font-size:14px;margin-top:10px">Voltamos amanha 18h</p><button onclick="document.getElementById('closedOverlay').classList.remove('on')" style="margin-top:14px;padding:10px 16px;border-radius:10px;background:#d4af37;color:#000;border:0;font-weight:800">OK</button></div></div>
+<div style="max-width:1000px;margin:0 auto;padding:8px 12px 0;display:flex;gap:8px;overflow:auto" id="catFilter"></div>
+<div class="grid" id="grid"></div>
+<div id="cartBar"><span id="qtd">0 itens</span><span>R$ <b id="tot">0,00</b></span><button onclick="document.getElementById('modal').classList.add('on')" style="background:#000;color:#d4af37;border:0;padding:8px 14px;border-radius:10px;font-weight:800">CARRINHO</button></div>
+<div id="modal"><div class="panel"><h3 style="color:#d4af37">Seu Pedido</h3><div id="cartList" class="small" style="margin:8px 0">Vazio</div><div style="display:flex;gap:6px"><input id="cCupom" placeholder="Cupom"><button onclick="aplicarCupom()" style="padding:10px;background:#d4af37;color:#000;border-radius:8px;border:0;font-weight:800">OK</button></div><div id="cupomMsg" class="small" style="color:#0f0"></div><input id="cNome" placeholder="Seu nome"><input id="cEnd" placeholder="Rua, numero"><select id="cBairro"></select><select id="cPag"><option>Pix</option><option>Dinheiro</option><option>Cartao</option></select><div id="totais" class="small" style="margin:8px 0"></div><button onclick="sendZap()" class="btnZap">ENVIAR NO ZAP</button><button onclick="document.getElementById('modal').classList.remove('on')" style="width:100%;margin-top:8px;padding:10px;background:#222;color:#fff;border:0;border-radius:10px">Fechar</button></div></div>
+<div id="admLogin"><div class="box" style="max-width:360px"><h3 style="color:#d4af37">Login ADM</h3><input id="aUser" placeholder="usuario"><input id="aPass" type="password" placeholder="senha"><button onclick="doLogin()" style="width:100%;padding:12px;background:#d4af37;color:#000;border:0;border-radius:10px;font-weight:800">Entrar</button><div class="small">Toque 5x na logo pra abrir</div><button onclick="document.getElementById('admLogin').classList.remove('on')" style="width:100%;margin-top:8px;padding:10px;background:#222;color:#fff;border:0;border-radius:10px">Fechar</button></div></div><div id="admPanel"><div class="box"><h3 style="color:#d4af37">PAINEL ADM</h3><div class="tab" id="admTabs"></div>
+<div id="tab-relatorio"><div class="kpi"><div><b id="kHoje">R$ 0</b><span class="small">Hoje</span></div><div><b id="kSemana">R$ 0</b><span class="small">7 dias</span></div><div><b id="kMes">R$ 0</b><span class="small">Mês</span></div><div><b id="kTotal">R$ 0</b><span class="small">Total</span></div></div><div class="kpi"><div><b id="kPedHoje">0</b><span class="small">Ped hoje</span></div><div><b id="kPedMes">0</b><span class="small">Ped mes</span></div><div><b id="kTicket">R$ 0</b><span class="small">Ticket</span></div><div><b id="kFrete">R$ 0</b><span class="small">Frete</span></div></div><div class="chartBox"><canvas id="chartVendas"></canvas></div><div class="chartBox"><div style="display:flex;justify-content:space-between"><h4 style="color:#d4af37">Pedidos</h4><div><select id="filtroPeriodo" onchange="renderRel()"><option value="hoje">Hoje</option><option value="7dias" selected>7 dias</option><option value="30dias">30 dias</option><option value="tudo">Tudo</option></select><button onclick="exportCSV()" style="padding:6px 10px;background:#d4af37;color:#000;border-radius:6px;border:0">CSV</button></div></div><table style="width:100%;font-size:11px;margin-top:8px"><thead><tr><th>Data</th><th>Cliente</th><th>Bairro</th><th>Total</th></tr></thead><tbody id="tabelaPed"></tbody></table></div><button onclick="limparHist()" style="padding:8px;background:#333;color:#fff;border-radius:8px;border:0">Limpar historico</button></div>
+<div id="tab-loja" style="display:none"><h4 style="color:#d4af37">Loja</h4><div style="display:flex;gap:8px;margin:8px 0"><button onclick="setLoja(true)" style="flex:1;padding:12px;border-radius:10px;background:#00a650;color:#fff;border:0;font-weight:800">ABERTA</button><button onclick="setLoja(false)" style="flex:1;padding:12px;border-radius:10px;background:#c00;color:#fff;border:0;font-weight:800">FECHADA</button></div><input id="cfgBanner" placeholder="Banner promo"><div style="display:flex;gap:6px"><input id="cfgHoraIni" type="time" value="18:00"><input id="cfgHoraFim" type="time" value="23:00"></div><label class="small"><input type="checkbox" id="cfgAuto"> Auto fechar</label><input id="cfgClosedMsg" value="Voltamos amanha 18h"><input id="cfgName" placeholder="Nome loja"><input id="cfgZap" placeholder="Zap"><input id="cfgPix" placeholder="PIX"><input id="cfgFree" type="number" placeholder="Frete gratis acima"><input id="cfgTempo" placeholder="Tempo entrega"><button onclick="saveCfg()" style="padding:10px;background:#d4af37;color:#000;border-radius:8px;border:0;margin-top:6px;font-weight:800">Salvar</button></div>
+<div id="tab-bairros" style="display:none"><h4 style="color:#d4af37">Bairros</h4><div style="display:flex;gap:6px"><input id="bNome" placeholder="Bairro"><input id="bTaxa" type="number" style="width:90px" placeholder="Taxa"><button onclick="addBairro()" style="padding:10px;background:#d4af37;color:#000;border-radius:8px;border:0">+</button></div><div id="bList"></div></div>
+<div id="tab-produtos" style="display:none"><h4 style="color:#d4af37">Produtos</h4><input id="pNome" placeholder="Nome"><input id="pDesc" placeholder="Desc"><div style="display:flex;gap:6px"><input id="pPreco" type="number" step="0.01" placeholder="Preco"><input id="pCat" placeholder="Categoria"></div><input id="pFile" type="file" accept="image/*"><input id="pImg" placeholder="Link foto"><input type="hidden" id="pId"><div style="display:flex;gap:6px;margin-top:6px"><button onclick="saveProd()" style="flex:1;padding:12px;background:#d4af37;color:#000;border-radius:10px;border:0;font-weight:800">Salvar</button><button onclick="clearProd()" style="flex:1;padding:12px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:10px">Novo</button></div><div id="pPreview"></div><div id="admList"></div></div>
+<div id="tab-cupom" style="display:none"><h4 style="color:#d4af37">Cupons</h4><div style="display:flex;gap:6px"><input id="cupCode" placeholder="Codigo"><input id="cupValor" type="number" style="width:90px" placeholder="Valor"><select id="cupTipo" style="width:70px"><option value="%">%</option><option value="R$">R$</option></select><button onclick="addCupom()" style="padding:10px;background:#d4af37;color:#000;border-radius:8px;border:0">+</button></div><div id="cupList"></div></div>
+<div id="tab-seg" style="display:none"><h4 style="color:#d4af37">Seguranca</h4><input id="cfgUser" placeholder="Usuario"><input id="cfgPass" placeholder="Senha" type="password"><button onclick="saveUser()" style="padding:10px;background:#d4af37;color:#000;border-radius:8px;border:0">Trocar Login</button></div>
+<button onclick="document.getElementById('admPanel').classList.remove('on');render()" style="width:100%;margin-top:12px;padding:12px;border-radius:10px;background:#d4af37;color:#000;border:0;font-weight:800">Fechar Painel</button>
+</div></div>
+<script>
+const DEFAULT=[
+{id:1,c:"PRATOS",n:"Ao Molho Branco Cremoso (aprox. 700g)",d:"Molho Cremoso!",p:29.9,img:"",on:true},
+{id:2,c:"PRATOS",n:"Alho Cremoso (aprox. 700g)",d:"Creme de alho suave!",p:29.9,img:"",on:true},{id:3,c:"PRATOS",n:"Quatro Queijos (aprox. 700g)",d:"Queijos que derretem",p:34.9,img:"",on:true},
+{id:4,c:"PRATOS",n:"À Bolonhesa (aprox. 700g)",d:"Molho de Tomate com carne",p:34.9,img:"",on:true},
+{id:5,c:"PRATOS",n:"Espaguete ao Molho de Camarão (aprox. 700g)",d:"Camaroes suculentos",p:59.9,img:"",on:true},
+{id:6,c:"PRATOS",n:"Ao molho de frango (Aproxi. 700g)",d:"Molho de frango cremoso",p:44.9,img:"",on:true},
+{id:7,c:"PRATOS",n:"ADICIONAIS BACON",d:"Bacon crocante",p:7,img:"",on:true},
+{id:8,c:"PRATOS",n:"ADICIONAIS CHEDDAR",d:"Cheddar cremoso",p:7,img:"",on:true},
+{id:9,c:"PRATOS",n:"ADICIONAIS MUSSARELA",d:"Mussarela ralada",p:7,img:"",on:true},
+{id:10,c:"PRATOS",n:"PORCAO DE FRITAS COM CARNE ACEBOLADA",d:"500g carne + 500g fritas",p:80,img:"",on:true},
+{id:11,c:"PRATOS",n:"FRITAS COM FRANGO A PASSARINHO",d:"700g frango + 500g fritas",p:75,img:"",on:true},
+{id:12,c:"PRATOS",n:"Porcao alcatra a palito com fritas",d:"700g alcatra + 500g fritas",p:139.9,img:"",on:true},
+{id:13,c:"PRATOS",n:"Porcao Frango com cheddar + fritas",d:"Frango cheddar + fritas queijo",p:99.9,img:"",on:true},
+{id:14,c:"BEBIDAS",n:"Suco Polpa 500ml",d:"LARANJA E GRAVIOLA",p:11.9,img:"",on:true},
+{id:15,c:"BEBIDAS",n:"Coca Cola",d:"Lata 350ml",p:7,img:"",on:true},
+];
+let products=JSON.parse(localStorage.getItem('massa_prod')||'null')||DEFAULT;
+let cfg=JSON.parse(localStorage.getItem('massa_cfg')||'null')||{name:"MASSA DELIVERY",zap:"5527996881732",pix:"",banner:"",aberta:true,horaIni:"18:00",horaFim:"23:00",auto:true,closedMsg:"Voltamos amanha 18h!",free:80,tempo:"30-50 min",bairros:[{b:"Jaguare - Centro",t:5},{b:"Jaguare - Interior",t:8},{b:"Barra",t:15}],cupons:[{code:"MASSA10",valor:10,tipo:"%"}],user:"admin",pass:"massa123"};
+let pedidos=JSON.parse(localStorage.getItem('massa_pedidos')||'[]');let cart=[];let filter="TODOS";let toques=0;let admTab="relatorio";let desconto=0;let cupomAplicado=null;
+function save(){localStorage.setItem('massa_prod',JSON.stringify(products));localStorage.setItem('massa_cfg',JSON.stringify(cfg));localStorage.setItem('massa_pedidos',JSON.stringify(pedidos))}
+function render(){document.getElementById('storeName').innerText=cfg.name;let cats=["TODOS",...new Set(products.filter(p=>p.on).map(p=>p.c))];document.getElementById('catFilter').innerHTML=cats.map(c=>`<button onclick="setFilter('${c}')" style="white-space:nowrap;padding:8px 14px;border-radius:20px;border:1px solid ${filter==c?'#d4af37':'#333'};background:${filter==c?'#d4af37':'#151515'};color:${filter==c?'#000':'#d4af37'};font-weight:700;font-size:11px">${c}</button>`).join('');let cur="";let html="";products.filter(p=>p.on).filter(p=>filter=="TODOS"||p.c==filter).forEach(p=>{if(p.c!=cur){cur=p.c;html+=`<div class="cat">${cur}</div>`}html+=`<div class="item"><img src="${p.img||'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=300'}"><div style="flex:1"><h3 style="font-size:13px;color:#fff">${p.n}</h3><div class="small">${p.d}</div><div class="preco">R$ ${p.p.toFixed(2).replace('.',',')}</div><button onclick="add(${p.id})" style="margin-top:6px;background:#d4af37;color:#000;border:0;padding:7px 12px;border-radius:8px;font-weight:800;width:100%;font-size:12px">Adicionar</button></div></div>`});document.getElementById('grid').innerHTML=html;document.getElementById('c
